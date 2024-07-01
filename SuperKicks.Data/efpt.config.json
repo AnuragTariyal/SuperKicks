@@ -15,15 +15,11 @@
    "T4TemplatePath": null,
    "Tables": [
       {
-         "Name": "[dbo].[Role]",
-         "ObjectType": 0
-      },
-      {
          "Name": "[dbo].[RoleClaims]",
          "ObjectType": 0
       },
       {
-         "Name": "[dbo].[User]",
+         "Name": "[dbo].[Roles]",
          "ObjectType": 0
       },
       {
@@ -36,6 +32,10 @@
       },
       {
          "Name": "[dbo].[UserRoles]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Users]",
          "ObjectType": 0
       },
       {

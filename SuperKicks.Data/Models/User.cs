@@ -37,11 +37,21 @@ public partial class User
 
     public int AccessFailedCount { get; set; }
 
+    public int AppUserId { get; set; }
+
+    public int CreatedBy { get; set; }
+
+    public DateTimeOffset CraetedDateTime { get; set; }
+
+    public int? UpdatedBy { get; set; }
+
+    public DateTimeOffset? UpdatedDateTime { get; set; }
+
     public virtual ICollection<UserClaim> UserClaims { get; set; } = new List<UserClaim>();
 
     public virtual ICollection<UserLogin> UserLogins { get; set; } = new List<UserLogin>();
 
-    public virtual ICollection<UserToken> UserTokens { get; set; } = new List<UserToken>();
+    public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 
-    public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
+    public virtual ICollection<UserToken> UserTokens { get; set; } = new List<UserToken>();
 }

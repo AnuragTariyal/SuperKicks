@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SuperKicks.Repo.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,7 @@ namespace SuperKicks.Repo.Repository.Interface
 {
     public interface IUserRepository
     {
-        string CreateUser(string userName, string password);
+        string CreateHashPassword(string password);
+        string CreateUser(UserViewModel vModel);
     }
 }
