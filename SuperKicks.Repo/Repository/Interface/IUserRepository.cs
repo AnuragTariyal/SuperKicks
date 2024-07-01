@@ -8,5 +8,6 @@ namespace SuperKicks.Repo.Repository.Interface
 {
     public interface IUserRepository
     {
+        string CreateUser(string userName, string password);
     }
 }

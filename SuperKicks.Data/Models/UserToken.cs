@@ -7,7 +7,7 @@ namespace SuperKicks.Data.Models;
 
 public partial class UserToken
 {
-    public string UserId { get; set; }
+    public Guid UserId { get; set; }
 
     public string LoginProvider { get; set; }
 

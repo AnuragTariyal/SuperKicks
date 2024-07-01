@@ -32,21 +32,29 @@ public partial class ApplicationDbContext : DbContext
         base.OnModelCreating(modelBuilder);
         modelBuilder.Entity<Role>(entity =>
         {
+            entity.ToTable("Role");
+
+            entity.HasIndex(e => e.NormalizedName, "RoleNameIndex").HasFilter("([NormalizedName] IS NOT NULL)");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Name).HasMaxLength(256);
             entity.Property(e => e.NormalizedName).HasMaxLength(256);
         });
 
         modelBuilder.Entity<RoleClaim>(entity =>
         {
-            entity.Property(e => e.RoleId)
-                .IsRequired()
-                .HasMaxLength(450);
-
             entity.HasOne(d => d.Role).WithMany(p => p.RoleClaims).HasForeignKey(d => d.RoleId);
         });
 
         modelBuilder.Entity<User>(entity =>
         {
+            entity.ToTable("User");
+
+            entity.HasIndex(e => e.NormalizedEmail, "EmailIndex").HasFilter("([NormalizedEmail] IS NOT NULL)");
+
+            entity.HasIndex(e => e.NormalizedUserName, "UserNameIndex").HasFilter("([NormalizedUserName] IS NOT NULL)");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Email).HasMaxLength(256);
             entity.Property(e => e.NormalizedEmail).HasMaxLength(256);
             entity.Property(e => e.NormalizedUserName).HasMaxLength(256);
@@ -61,14 +69,13 @@ public partial class ApplicationDbContext : DbContext
                     {
                         j.HasKey("UserId", "RoleId");
                         j.ToTable("UserRoles");
+                        j.HasIndex(new[] { "RoleId" }, "IX_UserRoles_RoleId");
                     });
         });
 
         modelBuilder.Entity<UserClaim>(entity =>
         {
-            entity.Property(e => e.UserId)
-                .IsRequired()
-                .HasMaxLength(450);
+            entity.HasIndex(e => e.UserId, "IX_UserClaims_UserId");
 
             entity.HasOne(d => d.User).WithMany(p => p.UserClaims).HasForeignKey(d => d.UserId);
         });
@@ -77,9 +84,7 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => new { e.LoginProvider, e.ProviderKey });
 
-            entity.Property(e => e.UserId)
-                .IsRequired()
-                .HasMaxLength(450);
+            entity.HasIndex(e => e.UserId, "IX_UserLogins_UserId");
 
             entity.HasOne(d => d.User).WithMany(p => p.UserLogins).HasForeignKey(d => d.UserId);
         });
