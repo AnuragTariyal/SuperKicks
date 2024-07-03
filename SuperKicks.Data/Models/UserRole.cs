@@ -5,11 +5,11 @@ using System.Collections.Generic;
 
 namespace SuperKicks.Data.Models;
 
-public partial class Role
+public partial class UserRole
 {
-    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
 
-    public string Name { get; set; }
+    public Guid RoleId { get; set; }
 
     public int CreatedBy { get; set; }
 
@@ -19,7 +19,7 @@ public partial class Role
 
     public DateTimeOffset? UpdatedDateTime { get; set; }
 
-    public virtual ICollection<RoleClaim> RoleClaims { get; set; } = new List<RoleClaim>();
+    public virtual Role Role { get; set; }
 
-    public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+    public virtual User User { get; set; }
 }
