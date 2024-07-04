@@ -20,9 +20,10 @@
     <PackageReference Include="Microsoft.Identity.Web" Version="2.15.2" />
     <PackageReference Include="Microsoft.Identity.Web.DownstreamApi" Version="2.15.2" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+		<DotNetCliToolReference Include="Microsoft.EntityFrameworkCore.Tools.DotNet" Version="7.0.0" />
   </ItemGroup>
-
-  <ItemGroup>
+	
+	<ItemGroup>
     <ProjectReference Include="..\SuperKicks.Data\SuperKicks.Data.csproj" />
     <ProjectReference Include="..\SuperKicks.Repo\SuperKicks.Repo.csproj" />
   </ItemGroup>

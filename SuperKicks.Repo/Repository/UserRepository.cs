@@ -1,14 +1,17 @@
-﻿using SuperKicks.Data.Models;
+﻿using Microsoft.AspNetCore.Identity;
+using SuperKicks.Data.Models;
 using SuperKicks.Repo.Repository.Interface;
 using SuperKicks.Repo.ViewModels;
 using System.Security.Cryptography;
 
 namespace SuperKicks.Repo.Repository
 {
-    public class UserRepository(ApplicationDbContext context) : IUserRepository
+    public class UserRepository(ApplicationDbContext context, SignInManager<ApplicationUser> signInManager
+        , UserManager<ApplicationUser> userManager) : IUserRepository
     {
         private readonly ApplicationDbContext _db = context;
-
+        private readonly SignInManager<ApplicationUser> _signInManager = signInManager;
+        private readonly UserManager<ApplicationUser> _userManager = userManager;
 
         //USER ----------------------------------------------------
         public string CreateUser(UserViewModel vModel)
@@ -71,5 +74,20 @@ namespace SuperKicks.Repo.Repository
 
             return hashedPassword;
         }
+
+        public async Task<string> Login(UserViewModel vModel)
+        {
+            var user = await _userManager.FindByEmailAsync(vModel.UserName);
+            if (user != null)
+            {
+                var result = await _signInManager.PasswordSignInAsync(vModel.UserName, vModel.Password, false, false);
+                if (result.Succeeded)
+                    return "Login successfull";
+                else
+                    return "Invalid username or password!";
+            }
+            return "User not found";
+        }
+
     }
 }

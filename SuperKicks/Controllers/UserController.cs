@@ -22,5 +22,14 @@ namespace SuperKicks.Controllers
             };
             return Ok(message);
         }
+        [HttpPost(@"login")]
+        public IActionResult Login(UserViewModel vmModel)
+        {
+            var message = new
+            {
+                message = _userRepository.Login(vmModel)
+            };
+            return Ok(message);
+        }
     }
 }

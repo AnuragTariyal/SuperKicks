@@ -11,5 +11,6 @@ namespace SuperKicks.Repo.Repository.Interface
     {
         string CreateHashPassword(string password);
         string CreateUser(UserViewModel vModel);
+        Task<string> Login(UserViewModel vModel);
     }
 }
