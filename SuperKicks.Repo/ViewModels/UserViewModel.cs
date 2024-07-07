@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,7 +9,18 @@ namespace SuperKicks.Repo.ViewModels
 {
     public class UserViewModel
     {
+        public Guid? Id { get; set; }
+        public required string UserName { get; set; }
+        public required string Password { get; set; }
+        [EmailAddress]
+        public required string Email { get; set; }
+        [Phone]
+        public required string PhoneNumber { get; set; }
+    }
+    public class LoginViewModel
+    {
         public required string UserName { get; set; }
         public required string Password { get; set; }
     }
+
 }
