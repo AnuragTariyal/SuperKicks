@@ -8,7 +8,7 @@ namespace SuperKicks.Repo.ViewModels
 {
     public class UserViewModel
     {
-        public string UserName { get; set; }
-        public string Password { get; set; }
+        public required string UserName { get; set; }
+        public required string Password { get; set; }
     }
 }
