@@ -34,7 +34,9 @@ namespace SuperKicks.Data.Models
                 entity.HasKey(e => e.Id).HasName("PK_Role");
 
                 entity.Property(e => e.Id).ValueGeneratedNever();
-                entity.Property(e => e.Name).HasMaxLength(256);
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(256);
             });
 
             modelBuilder.Entity<RoleClaim>(entity =>
@@ -54,10 +56,20 @@ namespace SuperKicks.Data.Models
 
                 entity.Property(e => e.Id).ValueGeneratedNever();
                 entity.Property(e => e.AppUserId).HasColumnName("AppUserID");
-                entity.Property(e => e.Email).HasMaxLength(256);
-                entity.Property(e => e.NormalizedEmail).HasMaxLength(256);
-                entity.Property(e => e.NormalizedUserName).HasMaxLength(256);
-                entity.Property(e => e.UserName).HasMaxLength(256);
+                entity.Property(e => e.Email)
+                    .IsRequired()
+                    .HasMaxLength(256);
+                entity.Property(e => e.NormalizedEmail)
+                    .IsRequired()
+                    .HasMaxLength(256);
+                entity.Property(e => e.NormalizedUserName)
+                    .IsRequired()
+                    .HasMaxLength(256);
+                entity.Property(e => e.PasswordHash).IsRequired();
+                entity.Property(e => e.PhoneNumber).IsRequired();
+                entity.Property(e => e.UserName)
+                    .IsRequired()
+                    .HasMaxLength(256);
             });
 
             modelBuilder.Entity<UserClaim>(entity =>

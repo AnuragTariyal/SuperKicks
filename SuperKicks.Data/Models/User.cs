@@ -21,10 +21,6 @@ public partial class User
 
     public string PasswordHash { get; set; }
 
-    public string SecurityStamp { get; set; }
-
-    public string ConcurrencyStamp { get; set; }
-
     public string PhoneNumber { get; set; }
 
     public bool PhoneNumberConfirmed { get; set; }
