@@ -9,8 +9,7 @@ namespace SuperKicks.Repo.Repository.Interface
 {
     public interface IUserRepository
     {
-        string CreateHashPassword(string password);
-        string CreateUser(UserViewModel vModel);
-        Task<string> Login(UserViewModel vModel);
+        bool CreateUser(UserViewModel vModel);
+        bool Login(UserViewModel vModel);
     }
 }

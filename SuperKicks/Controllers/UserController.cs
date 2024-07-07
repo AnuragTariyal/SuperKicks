@@ -16,20 +16,16 @@ namespace SuperKicks.Controllers
         [HttpPost(@"createuser")]
         public IActionResult CreateUser([FromBody] UserViewModel vModel)
         {
-            var message = new
-            {
-                Message = _userRepository.CreateUser(vModel)
-            };
-            return Ok(message);
+
+            bool result = _userRepository.CreateUser(vModel);
+            return result ? Ok($"user with {vModel.UserName} is created successfully.")
+                        : Unauthorized($"user with {vModel.UserName} email is alreay exists!");
         }
         [HttpPost(@"login")]
         public IActionResult Login(UserViewModel vmModel)
         {
-            var message = new
-            {
-                message = _userRepository.Login(vmModel)
-            };
-            return Ok(message);
+            bool result = _userRepository.Login(vmModel);
+            return result ? Ok("Login successfull") : Unauthorized("Invalid username or password!");
         }
     }
 }

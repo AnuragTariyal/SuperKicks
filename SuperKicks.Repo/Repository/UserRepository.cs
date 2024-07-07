@@ -1,25 +1,62 @@
-﻿using Microsoft.AspNetCore.Identity;
-using SuperKicks.Data.Models;
+﻿using SuperKicks.Data.Models;
 using SuperKicks.Repo.Repository.Interface;
 using SuperKicks.Repo.ViewModels;
 using System.Security.Cryptography;
 
 namespace SuperKicks.Repo.Repository
 {
-    public class UserRepository(ApplicationDbContext context, SignInManager<ApplicationUser> signInManager
-        , UserManager<ApplicationUser> userManager) : IUserRepository
+    public class UserRepository(ApplicationDbContext context) : IUserRepository
     {
         private readonly ApplicationDbContext _db = context;
-        private readonly SignInManager<ApplicationUser> _signInManager = signInManager;
-        private readonly UserManager<ApplicationUser> _userManager = userManager;
+        private const int SaltSize = 16;
+        private const int KeySize = 32;
+        private const int Iterations = 10000;
 
         //USER ----------------------------------------------------
-        public string CreateUser(UserViewModel vModel)
+        #region PasswordHasingAndSalt
+        public string CreateHashPassword(string password)
         {
-            var userExists = _db.Users.Where(x => x.UserName.ToLower() == vModel.UserName.ToLower()).FirstOrDefault();
-            if (userExists != null)
+            using var rng = new RNGCryptoServiceProvider();
+
+            byte[] salt = new byte[SaltSize];
+            rng.GetBytes(salt);
+
+            using (var deriveBytes = new Rfc2898DeriveBytes(password, salt, Iterations))
             {
-                return $"user with {vModel.UserName} email is alreay exists!";
+                byte[] key = deriveBytes.GetBytes(KeySize);
+                byte[] hashBytes = new byte[SaltSize + KeySize];
+                Array.Copy(salt, 0, hashBytes, 0, SaltSize);
+                Array.Copy(key, 0, hashBytes, SaltSize, KeySize);
+
+                return Convert.ToBase64String(hashBytes);
+            }
+
+        }
+        public bool VerifyHashedPassword(string hashedPassword, string providedPassword)
+        {
+            byte[] hashBytes = Convert.FromBase64String(hashedPassword);
+            byte[] salt = new byte[SaltSize];
+            Array.Copy(hashBytes, 0, salt, 0, SaltSize);
+
+            using var deriveBytes = new Rfc2898DeriveBytes(providedPassword, salt, 10000);
+            byte[] key = deriveBytes.GetBytes(KeySize);
+            for (int i = 0; i < KeySize; i++)
+            {
+                if (hashBytes[SaltSize + i] != key[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        #endregion
+
+        public bool CreateUser(UserViewModel vModel)
+        {
+            var userExists = _db.Users.FirstOrDefault(x => x.Email.ToLower() == vModel.UserName.ToLower());
+            if (userExists is not null)
+            {
+                return false;
             }
             else
             {
@@ -48,46 +85,19 @@ namespace SuperKicks.Repo.Repository
                     CraetedDateTime = DateTimeOffset.Now,
                     CreatedBy = appuserID
                 };
-
                 _db.SaveChanges();
-                return $"user with {vModel.UserName} is created successfully.";
+                return true;
             }
         }
-
-        public string CreateHashPassword(string password)
+        public bool Login(UserViewModel vModel)
         {
-            // Generate a salt
-            byte[] salt;
-            new RNGCryptoServiceProvider().GetBytes(salt = new byte[16]);
-
-            // Derive a 256-bit subkey (use HMACSHA256 with 100,000 iterations)
-            var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 100000);
-            byte[] hash = pbkdf2.GetBytes(32);
-
-            // Combine the salt and password bytes for later use
-            byte[] hashBytes = new byte[48];
-            Array.Copy(salt, 0, hashBytes, 0, 16);
-            Array.Copy(hash, 0, hashBytes, 16, 32);
-
-            // Convert to base64
-            string hashedPassword = Convert.ToBase64String(hashBytes);
-
-            return hashedPassword;
-        }
-
-        public async Task<string> Login(UserViewModel vModel)
-        {
-            var user = await _userManager.FindByEmailAsync(vModel.UserName);
-            if (user != null)
+            var userExists = _db.Users.Where(x => x.Email.ToLower() == vModel.UserName.ToLower()).FirstOrDefault();
+            if (userExists is not null)
             {
-                var result = await _signInManager.PasswordSignInAsync(vModel.UserName, vModel.Password, false, false);
-                if (result.Succeeded)
-                    return "Login successfull";
-                else
-                    return "Invalid username or password!";
+                bool password = VerifyHashedPassword(userExists.PasswordHash, vModel.Password);
+                return password;
             }
-            return "User not found";
+            return false;
         }
-
     }
 }
