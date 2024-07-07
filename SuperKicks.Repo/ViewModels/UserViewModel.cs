@@ -21,6 +21,7 @@ namespace SuperKicks.Repo.ViewModels
     {
         public required string UserName { get; set; }
         public required string Password { get; set; }
+        public string? NewPassword { get; set; }
     }
 
 }
