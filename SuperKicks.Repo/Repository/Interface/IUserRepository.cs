@@ -9,7 +9,9 @@ namespace SuperKicks.Repo.Repository.Interface
 {
     public interface IUserRepository
     {
-        bool CreateUser(UserViewModel vModel);
-        bool Login(UserViewModel vModel);
+        string ValidateCredential(string validateBy, string value);
+        bool CreateUser(UserViewModel vmModel);
+        bool Login(LoginViewModel vmModel);
+        bool ChangePassword(LoginViewModel vmModel);
     }
 }
