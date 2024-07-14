@@ -1,21 +1,27 @@
-﻿using SuperKicks.Data.Models;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using SuperKicks.Data.Models;
 using SuperKicks.Repo.Repository.Interface;
 using SuperKicks.Repo.ViewModels;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace SuperKicks.Repo.Repository
 {
-    public class UserRepository(ApplicationDbContext context) : IUserRepository
+    public class UserRepository(ApplicationDbContext context, IConfiguration config) : IUserRepository
     {
+        private readonly IConfiguration _config = config;
         private readonly ApplicationDbContext _db = context;
         private const int SaltSize = 16;
         private const int KeySize = 32;
         private const int Iterations = 10000;
         private const int UserLogIn = 1;
 
-        //USER ----------------------------------------------------
+        #region UserController
         #region PasswordHasingAndSalt
-        public string CreateHashPassword(string password)
+        private static string CreateHashPassword(string password)
         {
             using var rng = new RNGCryptoServiceProvider();
 
@@ -33,7 +39,7 @@ namespace SuperKicks.Repo.Repository
             }
 
         }
-        public bool VerifyHashedPassword(string hashedPassword, string providedPassword)
+        private static bool VerifyHashedPassword(string hashedPassword, string providedPassword)
         {
             byte[] hashBytes = Convert.FromBase64String(hashedPassword);
             byte[] salt = new byte[SaltSize];
@@ -51,19 +57,78 @@ namespace SuperKicks.Repo.Repository
             return true;
         }
         #endregion
+        public string GenerateToken(string userName)
+        {
+            string assignRole = string.Join(",", _db.UserRoles.Where(x => x.User.NormalizedUserName == userName.ToUpper()).Select(x=>x.Role.Name).ToList());
+
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.Email, userName),
+                new(ClaimTypes.Role, assignRole)
+            };
+
+            var key = _config.GetSection("Jwt:Key").Value;
+            if (string.IsNullOrEmpty(key) || key.Length < 64)
+            {
+                throw new ArgumentException("The key must be at least 64 characters long.");
+            }
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+            var signinCred = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha512Signature);
+
+            var securityToken = new JwtSecurityToken(
+                issuer: _config.GetSection("Jwt:Issuer").Value,
+                audience: _config.GetSection("Jwt:Audience").Value,
+                claims: claims,
+                expires: DateTime.Now.AddHours(1),
+                signingCredentials: signinCred);
+
+            return new JwtSecurityTokenHandler().WriteToken(securityToken);
+        }
         public string ValidateCredential(string validateBy, string value)
         {
             var normalizedValue = value.ToUpper();
             bool userExists = false;
-            if (validateBy == "emailphone")
+            
+            switch (validateBy)
             {
-                userExists = _db.Users.Any(x => x.NormalizedEmail == normalizedValue || x.PhoneNumber == normalizedValue);
-            }
-            else if (validateBy == "username")
-            {
-                userExists = _db.Users.Any(x => x.NormalizedUserName == normalizedValue);
+                case "emailphone":
+                    userExists = _db.Users.Any(x => x.NormalizedEmail == normalizedValue || x.PhoneNumber == normalizedValue);
+                    break;
+                case "username":
+                    userExists = _db.Users.Any(x => x.NormalizedUserName == normalizedValue);
+                    break;
             }
             return userExists ? $"User with {value} already exists!" : "Success";
+        }
+        private bool CheckUsenamePassword(LoginViewModel vmModel)
+        {
+            string normalizedValue = vmModel.UserName.ToUpper();
+            var userExists = _db.Users.Where(x => x.NormalizedEmail == normalizedValue || x.PhoneNumber == normalizedValue
+                                            || x.NormalizedUserName == normalizedValue).FirstOrDefault();
+            if (userExists is not null)
+            {
+                bool password = VerifyHashedPassword(userExists.PasswordHash, vmModel.Password);
+                return password;
+            }
+            return false;
+        }
+        public bool ChangePassword(LoginViewModel vmModel)
+        {
+            bool credential = CheckUsenamePassword(vmModel);
+            if (credential && vmModel.NewPassword is not null)
+            {
+                string normalizedValue = vmModel.UserName.ToUpper();
+                var newPass = CreateHashPassword(vmModel.NewPassword);
+                var userExists = _db.Users.Where(x => x.NormalizedEmail == normalizedValue || x.PhoneNumber == normalizedValue
+                                            || x.NormalizedUserName == normalizedValue).FirstOrDefault();
+                if (userExists is not null)
+                {
+                    userExists.PasswordHash = newPass;
+                    _db.SaveChanges();
+                    return true;
+                }
+            }
+            return false;
         }
         public bool CreateUser(UserViewModel vmModel)
         {
@@ -103,39 +168,21 @@ namespace SuperKicks.Repo.Repository
                     CraetedDateTime = DateTimeOffset.Now,
                     CreatedBy = appuserID
                 };
+                _db.UserRoles.Add(userRole);
                 _db.SaveChanges();
                 return true;
             }
         }
-        public bool Login(LoginViewModel vmModel)
+        public string Login(LoginViewModel vmModel)
         {
-            string normalizedValue = vmModel.UserName.ToLower();
-            var userExists = _db.Users.Where(x => x.NormalizedEmail == normalizedValue || x.PhoneNumber == normalizedValue
-                                            || x.NormalizedUserName == normalizedValue).FirstOrDefault();
-            if (userExists is not null)
+            bool validateUser = CheckUsenamePassword(vmModel);
+            if (validateUser)
             {
-                bool password = VerifyHashedPassword(userExists.PasswordHash, vmModel.Password);
-                return password;
+                string token = GenerateToken(vmModel.UserName);
+                return token;
             }
-            return false;
+            return string.Empty;
         }
-        public bool ChangePassword(LoginViewModel vmModel)
-        {
-            bool credential = Login(vmModel);
-            if (credential && vmModel.NewPassword is not null)
-            {
-                string normalizedValue = vmModel.UserName.ToLower();
-                var newPass= CreateHashPassword(vmModel.NewPassword);
-                var userExists = _db.Users.Where(x => x.NormalizedEmail == normalizedValue || x.PhoneNumber == normalizedValue
-                                            || x.NormalizedUserName == normalizedValue).FirstOrDefault();
-                if (userExists is not null)
-                {
-                    userExists.PasswordHash = newPass;
-                    _db.SaveChanges();
-                    return true;
-                }
-            }
-            return false;
-        }
+        #endregion
     }
 }
