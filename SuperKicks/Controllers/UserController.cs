@@ -26,8 +26,9 @@ namespace SuperKicks.Controllers
         [HttpPost(@"login")]
         public IActionResult Login(LoginViewModel vmModel)
         {
-            bool result = _userRepository.Login(vmModel);
-            return result ? Ok("Login successfull") : Unauthorized("Invalid username or password!");
+            string result = _userRepository.Login(vmModel);
+
+            return result != string.Empty ? Ok($"Login successfull \n{result}") : Unauthorized("Invalid username or password!");
         }
         [HttpPost(@"Changepassword")]
         public IActionResult ChangePassword(LoginViewModel vmModel)
