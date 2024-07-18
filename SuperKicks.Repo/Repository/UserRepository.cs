@@ -87,17 +87,13 @@ namespace SuperKicks.Repo.Repository
         public string ValidateCredential(string validateBy, string value)
         {
             var normalizedValue = value.ToUpper();
-            bool userExists = false;
 
-            switch (validateBy)
+            bool userExists = validateBy switch
             {
-                case "emailphone":
-                    userExists = _db.Users.Any(x => x.NormalizedEmail == normalizedValue || x.PhoneNumber == normalizedValue);
-                    break;
-                case "username":
-                    userExists = _db.Users.Any(x => x.NormalizedUserName == normalizedValue);
-                    break;
-            }
+                "emailphone" => _db.Users.Any(x => x.NormalizedEmail == normalizedValue || x.PhoneNumber == normalizedValue),
+                "username" => _db.Users.Any(x => x.NormalizedUserName == normalizedValue),
+                _ => false
+            };
             return userExists ? $"User with {value} already exists!" : "Success";
         }
         private string CheckUsenamePassword(LoginViewModel vmModel)
@@ -105,90 +101,71 @@ namespace SuperKicks.Repo.Repository
             string normalizedValue = vmModel.UserName.ToUpper();
             var userExists = _db.Users.Where(x => x.NormalizedEmail == normalizedValue || x.PhoneNumber == normalizedValue
                                             || x.NormalizedUserName == normalizedValue).FirstOrDefault();
-            if (userExists is not null)
+
+            if (userExists is null) return $"User not found with {vmModel.UserName}";
+
+            if (userExists.LockoutEnabled && userExists.LockoutEnd > DateTime.Now)
+                return $"user is locked please try after {userExists.LockoutEnd.Value:dd/MM/yyyy - hh:mm - t}!";
+
+            bool password = VerifyHashedPassword(userExists.PasswordHash, vmModel.Password);
+            if (!password)
             {
-                if (userExists.LockoutEnabled)
+                userExists.AccessFailedCount++;
+                if (userExists.AccessFailedCount > 2)
                 {
-                    if (userExists.LockoutEnd > DateTime.Now)
-                    {
-                        return $"user is locked please try after {userExists.LockoutEnd.Value:dd/MM/yyyy - hh:mm - t}!";
-                    }
-                    return $"User with {userExists.UserName} username is locked!";
+                    userExists.LockoutEnabled = true;
+                    userExists.LockoutEnd = DateTimeOffset.Now.AddSeconds(40);
+                    _db.SaveChanges();
+                    return $"User is locked for 40 sec.";
                 }
-                else
-                {
-                    bool password = VerifyHashedPassword(userExists.PasswordHash, vmModel.Password);
-                    if (!password)
-                    {
-                        userExists.AccessFailedCount++;
-                        if (userExists.AccessFailedCount > 2)
-                        {
-                            userExists.LockoutEnabled = true;
-                            userExists.LockoutEnd = DateTimeOffset.Now.AddSeconds(40);
-                            _db.SaveChanges();
-                            return $"User is locked for 40 sec.";
-                        }
-                        else
-                        {
-                            _db.SaveChanges();
-                            return "Please enter correct password!";
-                        }
-                    }
-                    else
-                    {
-                        userExists.AccessFailedCount = 0;
-                        userExists.LockoutEnabled = false;
-                        userExists.LockoutEnd = null;
-                        _db.SaveChanges();
-                        return StatusName.Success;
-                    }
-                }
+                _db.SaveChanges();
+                return "Please enter correct password!";
             }
-            return $"User not found with {vmModel.UserName}";
+
+            userExists.AccessFailedCount = 0;
+            userExists.LockoutEnabled = false;
+            userExists.LockoutEnd = null;
+            _db.SaveChanges();
+            return StatusName.Success;
         }
         public bool CreateUser(UserViewModel vmModel)
         {
             var userExists = _db.Users.FirstOrDefault(x => x.NormalizedEmail == vmModel.UserName.ToUpper());
 
-            if (userExists is not null)
-            {
-                return false;
-            }
-            else
-            {
-                var appuserID = _db.Users.OrderByDescending(x => x.AppUserId).Select(x => x.AppUserId).FirstOrDefault();
-                appuserID = appuserID == 0 ? 1 : appuserID + 1;
-                //Add User
-                User user = new()
-                {
-                    Id = Guid.NewGuid(),
-                    Email = vmModel.Email,
-                    NormalizedEmail = vmModel.Email.ToUpper(),
-                    UserName = vmModel.UserName,
-                    NormalizedUserName = vmModel.UserName.ToUpper(),
-                    PhoneNumber = vmModel.PhoneNumber,
-                    PhoneNumberConfirmed = false,
-                    AppUserId = appuserID,
-                    EmailConfirmed = false,
-                    CreatedBy = UserLogIn,
-                    CraetedDateTime = DateTimeOffset.Now,
-                    PasswordHash = CreateHashPassword(vmModel.Password)
-                };
-                _db.Users.Add(user);
+            if (userExists is not null) return false;
 
-                //Assign Role
-                var roleID = _db.Roles.Where(x => x.Name == RoleNamed.HDUser).Select(x => x.Id).FirstOrDefault();
-                UserRole userRole = new()
-                {
-                    UserId = user.Id,
-                    RoleId = roleID,
-                    CraetedDateTime = DateTimeOffset.Now,
-                    CreatedBy = appuserID
-                };
-                _db.UserRoles.Add(userRole);
-                _db.SaveChanges();
-                return true;
-            }
+            var appuserID = _db.Users.OrderByDescending(x => x.AppUserId).Select(x => x.AppUserId).FirstOrDefault();
+            appuserID = appuserID == 0 ? 1 : appuserID + 1;
+            //Add User
+            User user = new()
+            {
+                Id = Guid.NewGuid(),
+                Email = vmModel.Email,
+                NormalizedEmail = vmModel.Email.ToUpper(),
+                UserName = vmModel.UserName,
+                NormalizedUserName = vmModel.UserName.ToUpper(),
+                PhoneNumber = vmModel.PhoneNumber,
+                PhoneNumberConfirmed = false,
+                AppUserId = appuserID,
+                EmailConfirmed = false,
+                CreatedBy = UserLogIn,
+                CraetedDateTime = DateTimeOffset.Now,
+                PasswordHash = CreateHashPassword(vmModel.Password)
+            };
+            _db.Users.Add(user);
+
+            //Assign Role
+            var roleID = _db.Roles.Where(x => x.Name == RoleName.HDUser).Select(x => x.Id).FirstOrDefault();
+            UserRole userRole = new()
+            {
+                UserId = user.Id,
+                RoleId = roleID,
+                CraetedDateTime = DateTimeOffset.Now,
+                CreatedBy = appuserID
+            };
+            _db.UserRoles.Add(userRole);
+            _db.SaveChanges();
+            return true;
         }
 
         public string Login(LoginViewModel vmModel)
@@ -203,10 +180,8 @@ namespace SuperKicks.Repo.Repository
         }
         public string ChangePassword(LoginViewModel vmModel)
         {
-            if (vmModel.NewPassword is null)
-            {
-                return "Please enter new password correctly!";
-            }
+            if (vmModel.NewPassword is null) return "Please enter new password correctly!";
+
             string response = CheckUsenamePassword(vmModel);
             if (response == StatusName.Success)
             {
@@ -220,10 +195,7 @@ namespace SuperKicks.Repo.Repository
                     _db.SaveChanges();
                     return StatusName.Success;
                 }
-                else
-                {
-                    return $"User not found with {vmModel.UserName}";
-                }
+                return $"User not found with {vmModel.UserName}";
             }
             return response;
         }
