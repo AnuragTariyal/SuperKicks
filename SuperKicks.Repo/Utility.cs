@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SuperKicks.Repo
+﻿namespace SuperKicks.Repo
 {
-    public sealed class Utility
+    public sealed class RoleName
     {
         public const string HDUser = "HDUser";
+    }
+
+    public sealed class StatusName
+    {
+        public const string Success = "Success";
     }
 }

@@ -5,7 +5,7 @@ namespace SuperKicks.Repo.Repository.Interface
     public interface IUserRepository
     {
         string ValidateCredential(string validateBy, string value);
-        bool ChangePassword(LoginViewModel vmModel);
+        string ChangePassword(LoginViewModel vmModel);
         bool CreateUser(UserViewModel vmModel);
         string Login(LoginViewModel vmModel);
     }

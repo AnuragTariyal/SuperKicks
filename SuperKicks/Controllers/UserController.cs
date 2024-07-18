@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SuperKicks.Repo;
 using SuperKicks.Repo.Repository.Interface;
 using SuperKicks.Repo.ViewModels;
 
@@ -27,14 +28,13 @@ namespace SuperKicks.Controllers
         public IActionResult Login(LoginViewModel vmModel)
         {
             string result = _userRepository.Login(vmModel);
-
-            return result != string.Empty ? Ok($"Login successfull \n{result}") : Unauthorized("Invalid username or password!");
+            return result.StartsWith(StatusName.Success) ? Ok($"Login successfull \n{result.Replace(StatusName.Success, "")}") : Unauthorized(result);
         }
         [HttpPost(@"Changepassword")]
         public IActionResult ChangePassword(LoginViewModel vmModel)
         {
-            bool result = _userRepository.ChangePassword(vmModel);
-            return result ? Ok("Password changed successfully.") : BadRequest("Please Enter correct password!");
+            string result = _userRepository.ChangePassword(vmModel);
+            return result == StatusName.Success ? Ok("Password changed successfully.") : BadRequest("Please Enter correct password!");
         }
     }
 }
