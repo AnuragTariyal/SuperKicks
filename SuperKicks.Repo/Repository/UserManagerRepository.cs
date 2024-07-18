@@ -10,7 +10,7 @@ using System.Text;
 
 namespace SuperKicks.Repo.Repository
 {
-    public class UserRepository(ApplicationDbContext context, IConfiguration config) : IUserRepository
+    public class UserManagerRepository(ApplicationDbContext context, IConfiguration config) : IUserManagerRepository
     {
         private readonly IConfiguration _config = config;
         private readonly ApplicationDbContext _db = context;
@@ -96,18 +96,18 @@ namespace SuperKicks.Repo.Repository
             };
             return userExists ? $"User with {value} already exists!" : "Success";
         }
-        private string CheckUsenamePassword(LoginViewModel vmModel)
+        private string CheckUsenamePassword(LoginViewModel viewModel)
         {
-            string normalizedValue = vmModel.UserName.ToUpper();
+            string normalizedValue = viewModel.UserName.ToUpper();
             var userExists = _db.Users.Where(x => x.NormalizedEmail == normalizedValue || x.PhoneNumber == normalizedValue
                                             || x.NormalizedUserName == normalizedValue).FirstOrDefault();
 
-            if (userExists is null) return $"User not found with {vmModel.UserName}";
+            if (userExists is null) return $"User not found with {viewModel.UserName}";
 
             if (userExists.LockoutEnabled && userExists.LockoutEnd > DateTime.Now)
                 return $"user is locked please try after {userExists.LockoutEnd.Value:dd/MM/yyyy - hh:mm - t}!";
 
-            bool password = VerifyHashedPassword(userExists.PasswordHash, vmModel.Password);
+            bool password = VerifyHashedPassword(userExists.PasswordHash, viewModel.Password);
             if (!password)
             {
                 userExists.AccessFailedCount++;
@@ -128,9 +128,9 @@ namespace SuperKicks.Repo.Repository
             _db.SaveChanges();
             return StatusName.Success;
         }
-        public bool CreateUser(UserViewModel vmModel)
+        public bool CreateUser(UserViewModel viewModel)
         {
-            var userExists = _db.Users.FirstOrDefault(x => x.NormalizedEmail == vmModel.UserName.ToUpper());
+            var userExists = _db.Users.FirstOrDefault(x => x.NormalizedEmail == viewModel.UserName.ToUpper());
 
             if (userExists is not null) return false;
 
@@ -140,17 +140,17 @@ namespace SuperKicks.Repo.Repository
             User user = new()
             {
                 Id = Guid.NewGuid(),
-                Email = vmModel.Email,
-                NormalizedEmail = vmModel.Email.ToUpper(),
-                UserName = vmModel.UserName,
-                NormalizedUserName = vmModel.UserName.ToUpper(),
-                PhoneNumber = vmModel.PhoneNumber,
+                Email = viewModel.Email,
+                NormalizedEmail = viewModel.Email.ToUpper(),
+                UserName = viewModel.UserName,
+                NormalizedUserName = viewModel.UserName.ToUpper(),
+                PhoneNumber = viewModel.PhoneNumber,
                 PhoneNumberConfirmed = false,
                 AppUserId = appuserID,
                 EmailConfirmed = false,
                 CreatedBy = UserLogIn,
                 CraetedDateTime = DateTimeOffset.Now,
-                PasswordHash = CreateHashPassword(vmModel.Password)
+                PasswordHash = CreateHashPassword(viewModel.Password)
             };
             _db.Users.Add(user);
 
@@ -168,34 +168,34 @@ namespace SuperKicks.Repo.Repository
             return true;
         }
 
-        public string Login(LoginViewModel vmModel)
+        public string Login(LoginViewModel viewModel)
         {
-            string response = CheckUsenamePassword(vmModel);
+            string response = CheckUsenamePassword(viewModel);
             if (response == StatusName.Success)
             {
-                string token = GenerateToken(vmModel.UserName);
+                string token = GenerateToken(viewModel.UserName);
                 return (StatusName.Success + token);
             }
             return response;
         }
-        public string ChangePassword(LoginViewModel vmModel)
+        public string ChangePassword(LoginViewModel viewModel)
         {
-            if (vmModel.NewPassword is null) return "Please enter new password correctly!";
+            if (viewModel.NewPassword is null) return "Please enter new password correctly!";
 
-            string response = CheckUsenamePassword(vmModel);
+            string response = CheckUsenamePassword(viewModel);
             if (response == StatusName.Success)
             {
-                string normalizedValue = vmModel.UserName.ToUpper();
+                string normalizedValue = viewModel.UserName.ToUpper();
                 var userExists = _db.Users.Where(x => x.NormalizedEmail == normalizedValue || x.PhoneNumber == normalizedValue
                                             || x.NormalizedUserName == normalizedValue).FirstOrDefault();
                 if (userExists is not null)
                 {
-                    string newPass = CreateHashPassword(vmModel.NewPassword);
+                    string newPass = CreateHashPassword(viewModel.NewPassword);
                     userExists.PasswordHash = newPass;
                     _db.SaveChanges();
                     return StatusName.Success;
                 }
-                return $"User not found with {vmModel.UserName}";
+                return $"User not found with {viewModel.UserName}";
             }
             return response;
         }

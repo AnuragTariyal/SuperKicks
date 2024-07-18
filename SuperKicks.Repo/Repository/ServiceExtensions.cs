@@ -7,7 +7,7 @@ namespace SuperKicks.Repo.Repository
     {
         public static void AddRepositories(this IServiceCollection services)
         {
-            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IUserManagerRepository, UserManagerRepository>();
         }
     }
 }
