@@ -18,4 +18,14 @@ namespace SuperKicks.Repo.ViewModels
         public string? NewPassword { get; set; }
     }
 
+    public class RoleViewModel
+    {
+        public Guid? Id { get; set; }
+        public required string Name { get; set; }
+        public int CreatedBy { get; set; }
+        public DateTimeOffset CraetedDateTime { get; set; }
+        public int? UpdatedBy { get; set; }
+        public DateTimeOffset? UpdatedDateTime { get; set; }
+    }
+
 }
