@@ -37,11 +37,13 @@ public partial class User
 
     public int CreatedBy { get; set; }
 
-    public DateTimeOffset CraetedDateTime { get; set; }
+    public DateTimeOffset CreatedDateTime { get; set; }
 
     public int? UpdatedBy { get; set; }
 
     public DateTimeOffset? UpdatedDateTime { get; set; }
+
+    public bool IsDeleted { get; set; }
 
     public virtual ICollection<UserClaim> UserClaims { get; set; } = new List<UserClaim>();
 

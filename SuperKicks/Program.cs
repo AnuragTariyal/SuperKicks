@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SuperKicks.Data.Models;
+using SuperKicks.Repo;
 using SuperKicks.Repo.Repository;
 using SuperKicks.Repo.Repository.Interface;
 using System.Text;
@@ -14,6 +15,7 @@ options.UseSqlServer(builder.Configuration.GetConnectionString("cs")));
 
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddRepositories();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 
 //Authentication
@@ -42,6 +44,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+var httpContextAccessor = app.Services.GetRequiredService<IHttpContextAccessor>();
+TrackUser.Initialize(httpContextAccessor);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
