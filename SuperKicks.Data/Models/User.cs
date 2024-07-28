@@ -37,7 +37,7 @@ public partial class User
 
     public int CreatedBy { get; set; }
 
-    public DateTimeOffset CraetedDateTime { get; set; }
+    public DateTimeOffset CreatedDateTime { get; set; }
 
     public int? UpdatedBy { get; set; }
 
