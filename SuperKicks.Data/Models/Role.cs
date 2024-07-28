@@ -13,11 +13,13 @@ public partial class Role
 
     public int CreatedBy { get; set; }
 
-    public DateTimeOffset CraetedDateTime { get; set; }
+    public DateTimeOffset CreatedDateTime { get; set; }
 
     public int? UpdatedBy { get; set; }
 
     public DateTimeOffset? UpdatedDateTime { get; set; }
+
+    public bool IsDeleted { get; set; }
 
     public virtual ICollection<RoleClaim> RoleClaims { get; set; } = new List<RoleClaim>();
 

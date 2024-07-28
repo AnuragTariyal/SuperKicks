@@ -43,6 +43,8 @@ public partial class User
 
     public DateTimeOffset? UpdatedDateTime { get; set; }
 
+    public bool IsDeleted { get; set; }
+
     public virtual ICollection<UserClaim> UserClaims { get; set; } = new List<UserClaim>();
 
     public virtual ICollection<UserLogin> UserLogins { get; set; } = new List<UserLogin>();

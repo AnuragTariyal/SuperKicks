@@ -17,9 +17,10 @@ namespace SuperKicks.Repo.Repository
         private const int SaltSize = 16;
         private const int KeySize = 32;
         private const int Iterations = 10000;
-        private const int UserLogIn = 1;
+        private const int AppUserID = 1;
 
-        #region UserController
+        #region UserAndLogin
+
         #region PasswordHasingAndSalt
         private static string CreateHashPassword(string password)
         {
@@ -84,6 +85,10 @@ namespace SuperKicks.Repo.Repository
 
             return new JwtSecurityTokenHandler().WriteToken(securityToken);
         }
+        public List<User> GetUsers()
+        {
+            return [.. _db.Users];
+        }
         public string ValidateCredential(string validateBy, string value)
         {
             var normalizedValue = value.ToUpper();
@@ -128,11 +133,15 @@ namespace SuperKicks.Repo.Repository
             _db.SaveChanges();
             return StatusName.Success;
         }
-        public bool CreateUser(UserViewModel viewModel)
+        public string CreateUser(UserViewModel viewModel)
         {
             var userExists = _db.Users.FirstOrDefault(x => x.NormalizedEmail == viewModel.UserName.ToUpper());
-
-            if (userExists is not null) return false;
+            if (userExists != null)
+            {
+                return userExists.IsDeleted
+                    ? $"{StatusName.Failed} Role with {viewModel.UserName} already exists in inactive state!"
+                    : $"{StatusName.Failed} Role with {viewModel.UserName} already exists!";
+            }
 
             var appuserID = _db.Users.OrderByDescending(x => x.AppUserId).Select(x => x.AppUserId).FirstOrDefault();
             appuserID = appuserID == 0 ? 1 : appuserID + 1;
@@ -148,7 +157,7 @@ namespace SuperKicks.Repo.Repository
                 PhoneNumberConfirmed = false,
                 AppUserId = appuserID,
                 EmailConfirmed = false,
-                CreatedBy = UserLogIn,
+                CreatedBy = AppUserID,
                 CraetedDateTime = DateTimeOffset.Now,
                 PasswordHash = CreateHashPassword(viewModel.Password)
             };
@@ -161,13 +170,12 @@ namespace SuperKicks.Repo.Repository
                 UserId = user.Id,
                 RoleId = roleID,
                 CraetedDateTime = DateTimeOffset.Now,
-                CreatedBy = appuserID
+                CreatedBy = AppUserID
             };
             _db.UserRoles.Add(userRole);
             _db.SaveChanges();
-            return true;
+            return StatusName.Success;
         }
-
         public string Login(LoginViewModel viewModel)
         {
             string response = CheckUsenamePassword(viewModel);
@@ -199,6 +207,56 @@ namespace SuperKicks.Repo.Repository
             }
             return response;
         }
+        #endregion
+
+        #region RoleAndUserRole
+        public string AddUpdRole(RoleViewModel viewModel)
+        {
+            if (viewModel.Id == null || viewModel.Id == Guid.Empty)
+            {
+                var roleExist = _db.Roles.FirstOrDefault(x => x.Name.ToLower() == viewModel.Name.ToLower());
+                if (roleExist != null)
+                {
+                    return roleExist.IsDeleted
+                        ? $"{StatusName.Failed} Role with {viewModel.Name} already exists in inactive state!"
+                        : $"{StatusName.Failed} Role with {viewModel.Name} already exists!";
+                }
+                var newRole = new Role
+                {
+                    Id = Guid.NewGuid(),
+                    Name = viewModel.Name,
+                    CreatedBy = AppUserID,
+                    CreatedDateTime = DateTimeOffset.Now,
+                    IsDeleted = false,
+                };
+                _db.Roles.Add(newRole);
+                _db.SaveChanges();
+                return "Role added successfully.";
+            }
+            else
+            {
+                var role = _db.Roles.FirstOrDefault(x => x.Id == viewModel.Id);
+                if (role == null) return $"{StatusName.Failed} Role not found!";
+                role.Name = viewModel.Name;
+                role.UpdatedBy = AppUserID;
+                role.UpdatedDateTime = DateTimeOffset.Now;
+                _db.SaveChanges();
+                return "Role updated successfully.";
+            }
+        }
+        public string ActiveInactiveRole(bool flag, Guid id)
+        {
+            var role = _db.Roles.FirstOrDefault(x => x.Id == id);
+            if (role == null) return $"{StatusName.Failed}Role not found!";
+            role.IsDeleted = flag;
+            _db.SaveChanges();
+            return StatusName.Success;
+        }
+        public List<Role> GetRoles()
+        {
+            return [.. _db.Roles];
+        }
+
         #endregion
     }
 }
