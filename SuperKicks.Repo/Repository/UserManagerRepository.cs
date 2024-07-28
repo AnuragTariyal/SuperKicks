@@ -213,6 +213,10 @@ namespace SuperKicks.Repo.Repository
         #endregion
 
         #region RoleAndUserRole
+        public List<Role> GetRoles()
+        {
+            return [.. _db.Roles];
+        }
         public string AddUpdRole(RoleViewModel viewModel)
         {
             if (viewModel.Id == null || viewModel.Id == Guid.Empty)
@@ -252,10 +256,6 @@ namespace SuperKicks.Repo.Repository
             role.IsDeleted = flag;
             _db.SaveChanges();
             return StatusName.Success;
-        }
-        public List<Role> GetRoles()
-        {
-            return [.. _db.Roles];
         }
 
         #endregion
