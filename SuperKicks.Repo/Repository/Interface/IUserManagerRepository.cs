@@ -17,6 +17,7 @@ namespace SuperKicks.Repo.Repository.Interface
         List<Role> GetRoles();
         string AddUpdRole(RoleViewModel viewModel);
         string ActiveInactiveRole(bool flag, Guid id);
+        string AssignUnAssignRolesToUser(UserRoleViewModel viewModel);
         #endregion
     }
 }

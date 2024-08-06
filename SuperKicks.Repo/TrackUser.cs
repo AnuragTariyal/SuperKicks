@@ -50,7 +50,7 @@ namespace SuperKicks.Repo
 
         private static void SetProperty<T>(T model, string propertyName, object value)
         {
-            var property = model.GetType().GetProperty(propertyName);
+            var property = model?.GetType().GetProperty(propertyName);
             if (property != null && property.CanWrite)
             {
                 property.SetValue(model, value);

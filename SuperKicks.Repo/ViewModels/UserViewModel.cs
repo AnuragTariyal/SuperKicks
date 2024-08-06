@@ -28,4 +28,10 @@ namespace SuperKicks.Repo.ViewModels
         public DateTimeOffset? UpdatedDateTime { get; set; }
     }
 
+    public class UserRoleViewModel
+    {
+        public Guid UserId { get; set; }
+        public required List<Guid> RoleIds { get; set; }
+        public bool AssingUnAssignRoles { get; set; }
+    }
 }

@@ -7,6 +7,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Transactions;
 
 namespace SuperKicks.Repo.Repository
 {
@@ -257,7 +258,44 @@ namespace SuperKicks.Repo.Repository
             _db.SaveChanges();
             return StatusName.Success;
         }
-
+        public string AssignUnAssignRolesToUser(UserRoleViewModel viewModel)
+        {
+            using var scope = new TransactionScope();
+            //Assign Roles
+            if (viewModel.AssingUnAssignRoles)
+            {
+                var existingAssignments = _db.UserRoles.Where(x => x.UserId == viewModel.UserId).Select(x => x.RoleId).ToList();
+                foreach (Guid roleID in viewModel.RoleIds)
+                {
+                    if (!existingAssignments.Contains(roleID))
+                    {
+                        UserRole userRole = new()
+                        {
+                            UserId = viewModel.UserId,
+                            RoleId = roleID
+                        };
+                        TrackUser.Created(userRole);
+                        _db.Add(userRole);
+                        _db.SaveChanges();
+                    }
+                }
+            }
+            else
+            {
+                //UnAssign Role
+                var rolesToUnassign = _db.UserRoles
+                .Where(x => x.UserId == viewModel.UserId && viewModel.RoleIds.Contains(x.RoleId))
+                .ToList();
+                if (rolesToUnassign.Count == 0)
+                {
+                    return $"{StatusName.Failed}: No matching roles found to unassign.";
+                }
+                _db.UserRoles.RemoveRange(rolesToUnassign);
+                _db.SaveChanges();
+            }
+            scope.Complete();
+            return StatusName.Success;
+        }
         #endregion
     }
 }

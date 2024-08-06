@@ -75,6 +75,12 @@ namespace SuperKicks.Controllers
                             ? (Ok(flag ? "Role is activate" : "Role is inactivate"))
                             : BadRequest(result.Replace(StatusName.Failed, ""));
         }
+        [HttpPost(@"assignUnAssignRole")]
+        public IActionResult AssignUnAssignRole([FromBody] UserRoleViewModel viewModel)
+        {
+            string result = _userManagerRepository.AssignUnAssignRolesToUser(viewModel);
+            return result != StatusName.Success ? BadRequest(StatusName.SystemError) : Ok(result);
+        }
         #endregion
     }
 }
